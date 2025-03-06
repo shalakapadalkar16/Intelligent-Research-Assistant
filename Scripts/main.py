@@ -1,36 +1,42 @@
+import requests
 from fastapi import FastAPI
-from fastapi.responses import Response
-from search_paper import search_papers
-from summarize import summarize_text
-import json
+from fastapi.responses import ORJSONResponse
 
 app = FastAPI()
 
-@app.get("/")
-def home():
-    return {"message": "Welcome to the Research Assistant API!"}
+# Function to fetch papers from the API
+def fetch_papers_from_api(query, top_n=5):
+    api_url = f"http://127.0.0.1:8000/search/?query={query}&top_n={top_n}"
+    print(f"Fetching papers from: {api_url}")  # Debugging: Print the URL
+    try:
+        response = requests.get(api_url)
+        print(f"Response status code: {response.status_code}")  # Debugging: Check the response status
+        if response.status_code == 200:
+            return response.json()['papers']
+        else:
+            raise Exception(f"Error fetching data from API. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error occurred: {e}")  # Debugging: Print the error if any
+        raise e  # Reraise the exception after logging it
 
-@app.get("/search/")
-def search(query: str, top_n: int = 5):
-    """API endpoint to search for research papers."""
-    results = search_papers(query, top_n)
+# Search endpoint to search for papers
+@app.get("/search/", response_class=ORJSONResponse)
+async def search(query: str, top_n: int = 5):
+    print(f"Searching for: {query}")  # Debugging: Print the search query
+    try:
+        papers = fetch_papers_from_api(query, top_n)
+        return {"papers": papers}
+    except Exception as e:
+        return {"error": str(e)}
 
-    # Always pretty-print the response
-    formatted_results = json.dumps({"papers": results}, indent=4)
-    return Response(content=formatted_results, media_type="application/json")
-
-@app.get("/summarize/")
+# Example endpoint for summarizing papers
+@app.get("/summarize/", response_class=ORJSONResponse)
 def summarize(paper_title: str):
     """API endpoint to summarize a research paper."""
-    results = search_papers(paper_title, top_n=1)
+    summary = f"Summary of the paper '{paper_title}' will be here."
+    return {"title": paper_title, "summary": summary}
 
-    if not results:
-        return Response(content=json.dumps({"error": "Paper not found"}, indent=4), media_type="application/json")
-
-    summary = summarize_text(results[0]["abstract"])
-    formatted_summary = json.dumps({"title": results[0]["title"], "summary": summary}, indent=4)
-    return Response(content=formatted_summary, media_type="application/json")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Home endpoint
+@app.get("/")
+def home():
+    return {"message": "Welcome to the Intelligent Research Assistant API!"}
