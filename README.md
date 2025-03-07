@@ -1,6 +1,5 @@
 # 📚 Intelligent Research Assistant
 
-![Intelligent Research Assistant](https://your-image-url.png)
 
 ## 📌 Overview
 The **Intelligent Research Assistant** is a **Streamlit** and **FastAPI-based web application** that allows users to:
