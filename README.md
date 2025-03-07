@@ -128,7 +128,7 @@ docker-compose up --build
 🔹 **Author:** [Durgesh Sakhardande](https://www.linkedin.com/in/durgesh-s/)  
 🔹 **GitHub:** [DurgeshS-25](https://github.com/DurgeshS-25)  
 🔹 **Email:** [sakhardande.d@northeastern.edu](mailto:sakhardande.d@northeastern.edu)  
-
+---
 🔹 **Author:** [Shalaka Padalkar](https://www.linkedin.com/in/shalaka-padalkar/)  
 🔹 **GitHub:** [shalakapadalkar16](https://github.com/shalakapadalkar16)  
 🔹 **Email:** [padalkar.sha@northeastern.edu](mailto:padalkar.sha@northeastern.edu)  
