@@ -1,49 +1,78 @@
 import streamlit as st
 import requests
 
-# Set page title and layout
-st.set_page_config(page_title="Intelligent Research Assistant", layout="wide")
+# FastAPI Backend URL
+FASTAPI_BASE_URL = "http://127.0.0.1:8000"
 
-# Center the title
-st.markdown(
-    "<h1 style='text-align: center;'>📚 Intelligent Research Assistant</h1>",
-    unsafe_allow_html=True
-)
+# Streamlit App Configuration
+st.set_page_config(page_title="Research Assistant", layout="wide")
 
-# Add some spacing after the title
-st.markdown("<br>", unsafe_allow_html=True)
+# App Title
+st.title("📚 Intelligent Research Assistant")
 
-# User input for query
-query = st.text_input(
-    "🔍 Enter your search query",
-    "",
-    placeholder="Type a research topic...",
-    label_visibility="collapsed",
-)
+# User Input for Search Query
+query = st.text_input("🔍 Enter a topic to search for research papers:", "")
 
-# Add some space for UI
-st.markdown("<br>", unsafe_allow_html=True)
+# State variables to store search results and summaries
+if "papers" not in st.session_state:
+    st.session_state.papers = []
+if "summaries" not in st.session_state:
+    st.session_state.summaries = {}
 
-# Search button
 if st.button("Search"):
     if query:
-        with st.spinner("🔎 Searching for papers... Please wait."):
-            api_url = f"http://127.0.0.1:8000/search/?query={query}"
-            response = requests.get(api_url)
-
+        st.write("🔄 Searching for papers... Please wait.")
+        try:
+            response = requests.get(f"{FASTAPI_BASE_URL}/search/?query={query}")
             if response.status_code == 200:
-                data = response.json()
-                st.subheader("📄 Search Results")
+                papers = response.json().get("papers", [])
 
-                # Display papers with styled containers
-                for paper in data.get("papers", []):
-                    with st.expander(f"📄 {paper['title']}", expanded=True):
-                        st.write(f"**Authors:** {paper['authors']}")
-                        st.write(f"📅 Published: {paper['publication_date']}")
-                        st.write(f"**Summary:** {paper['summary']}")
-                        st.markdown(f"🔗 [Read Paper]({paper['pdf_url']})", unsafe_allow_html=True)
+                # Store papers in session state and reset summaries
+                st.session_state.papers = papers
+                st.session_state.summaries = {}  
 
+                if not papers:
+                    st.warning("⚠️ No papers found. Try a different search term.")
             else:
-                st.error("⚠️ Error fetching data. Check the API.")
-    else:
-        st.warning("❗ Please enter a search query.")
+                st.error("❌ Error fetching papers. Please check the API.")
+        except Exception as e:
+            st.error(f"🚨 An error occurred: {str(e)}")
+
+# Display papers and add a button to generate summaries
+for i, paper in enumerate(st.session_state.papers):
+    st.subheader(f"📄 {paper['title']}")
+
+    # ✅ **Fix Author Formatting**
+    authors = paper["authors"]
+    if isinstance(authors, list):
+        authors = ", ".join(authors)  # Convert list to a comma-separated string
+    
+    st.write(f"**Authors:** {authors}")
+    st.write(f"**Published on:** {paper['publication_date']}")
+    st.write(f"**Abstract:** {paper['abstract']}")
+    st.write(f"[📄 Read Full Paper]({paper['pdf_url']})")
+
+    # Summarization button
+    if st.button(f"Summarize Paper {i+1}", key=f"summary_btn_{i}"):
+        st.write("⏳ Generating summary... Please wait.")
+        try:
+            summary_url = f"{FASTAPI_BASE_URL}/summarize/?paper_title={paper['title']}"
+            summary_response = requests.get(summary_url)
+
+            if summary_response.status_code == 200:
+                summary_data = summary_response.json()
+                st.session_state.summaries[paper["title"]] = summary_data.get("summary", "No summary available.")
+            else:
+                st.session_state.summaries[paper["title"]] = f"❌ Error fetching summary. API returned {summary_response.status_code}"
+        except Exception as e:
+            st.session_state.summaries[paper["title"]] = f"🚨 An error occurred: {str(e)}"
+
+    # Show the summary if it exists
+    if paper["title"] in st.session_state.summaries:
+        st.write(f"**Summary:** {st.session_state.summaries[paper['title']]}")
+
+    st.divider()  # Adds a horizontal line between papers
+
+# Footer
+st.markdown("---")
+st.markdown("👨‍💻 Built by **Durgesh** | Powered by **FastAPI & Streamlit**")

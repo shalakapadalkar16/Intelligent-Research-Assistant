@@ -1,2 +1,8 @@
 fastapi
 uvicorn
+streamlit
+requests
+elasticsearch
+arxiv
+pdfplumber
+ollama
